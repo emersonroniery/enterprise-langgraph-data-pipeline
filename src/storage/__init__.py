@@ -2,8 +2,8 @@
 
 from src.storage.database import (
     Base,
-    PipelineRunRecord,
     ExtractedDocumentRecord,
+    PipelineRunRecord,
     get_db_session,
     init_db,
 )

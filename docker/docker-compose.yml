@@ -1,22 +1,6 @@
 version: "3.9"
 
 services:
-  pipeline-app:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-    container_name: enterprise_langgraph_pipeline
-    restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-    env_file:
-      - ../.env
-    volumes:
-      - ../logs:/app/logs
-    networks:
-      - pipeline-net
-
   postgres:
     image: postgres:16-alpine
     container_name: pipeline_postgres
@@ -28,19 +12,41 @@ services:
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pipeline_user} -d ${POSTGRES_DB:-pipeline_db}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-pipeline_user} -d $${POSTGRES_DB:-pipeline_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
     networks:
-      - pipeline-net
+      - pipeline_network
+
+  pipeline:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: enterprise_langgraph_pipeline
+    restart: on-failure
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_URL: postgresql://${POSTGRES_USER:-pipeline_user}:${POSTGRES_PASSWORD:-pipeline_password_secure_mock}@postgres:5432/${POSTGRES_DB:-pipeline_db}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      MIN_CONFIDENCE_THRESHOLD: ${MIN_CONFIDENCE_THRESHOLD:-0.7}
+      MAX_RETRIES: ${MAX_RETRIES:-2}
+    env_file:
+      - ../.env
+    volumes:
+      - ../logs:/app/logs
+    networks:
+      - pipeline_network
 
 volumes:
-  pgdata:
+  postgres_data:
     driver: local
 
 networks:
-  pipeline-net:
+  pipeline_network:
     driver: bridge

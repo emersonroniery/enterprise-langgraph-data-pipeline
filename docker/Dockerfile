@@ -1,36 +1,43 @@
-# Build stage for Enterprise LangGraph Data Pipeline
+# ==============================================================================
+# Enterprise LangGraph Data Pipeline - Production Dockerfile
+# Optimized Multi-layer build based on python:3.11-slim with non-root security
+# ==============================================================================
+
 FROM python:3.11-slim AS base
 
-# Prevent Python from writing .pyc files and enable unbuffered logging
+# Python runtime and build optimization flags
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    DEBIAN_FRONTEND=noninteractive
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
 WORKDIR /app
 
-# Install system dependencies needed for Playwright, PostgreSQL client and builds
+# Install minimal OS dependencies required for PostgreSQL and network connectivity
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
     curl \
     libpq-dev \
-    git \
+    gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python requirements
+# Create dedicated non-root application user and group for enterprise compliance
+RUN groupadd -r -g 1001 appgroup && \
+    useradd -r -u 1001 -g appgroup -d /app -s /bin/false appuser
+
+# Leverage Docker layer caching by installing dependencies before copying source code
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt
 
-# Install Playwright browser binaries and OS dependencies
-RUN playwright install --with-deps chromium
+# Copy application source code and configuration
+COPY . .
 
-# Create a non-privileged application user for security hardening
-RUN useradd -m -u 1000 appuser && \
-    chown -R appuser:appuser /app
+# Ensure appuser ownership of application files and runtime logs directory
+RUN mkdir -p /app/logs && \
+    chown -R appuser:appgroup /app
+
+# Switch to unprivileged execution user
 USER appuser
 
-# Copy application source code
-COPY --chown=appuser:appuser . .
-
-# Default execution entrypoint
+# Default pipeline entrypoint
 CMD ["python", "-m", "src.graph.workflow"]

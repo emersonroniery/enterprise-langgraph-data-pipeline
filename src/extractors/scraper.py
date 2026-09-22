@@ -5,9 +5,11 @@ and metadata for market intelligence analysis.
 """
 
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 import httpx
 from bs4 import BeautifulSoup
+
 from src.config import settings
 from src.utils.logger import logger
 
@@ -17,7 +19,7 @@ class WebExtractor:
 
     def __init__(
         self,
-        timeout: Optional[float] = None,
+        timeout: float | None = None,
         max_redirects: int = 5,
     ) -> None:
         """Initializes extractor with configurable timeout and network boundaries."""
@@ -32,7 +34,7 @@ class WebExtractor:
             "Upgrade-Insecure-Requests": "1",
         }
 
-    async def extract(self, url: str, attempt: int = 0) -> Dict[str, Any]:
+    async def extract(self, url: str, attempt: int = 0) -> dict[str, Any]:
         """Asynchronously extracts DOM text, headers, and metadata from a target URL.
 
         Implements an automatic structured fallback strategy when initial requests
@@ -50,21 +52,25 @@ class WebExtractor:
 
         # Primary extraction attempt
         try:
-            return await self._fetch_and_parse(url, headers=self.default_headers, start_time=start_time)
+            return await self._fetch_and_parse(
+                url, headers=self.default_headers, start_time=start_time
+            )
         except Exception as primary_exc:
             logger.warning(
                 "Primary extraction failed for {} ({}). Initiating structured fallback...",
                 url,
                 primary_exc,
             )
-            return await self._execute_fallback(url, attempt=attempt, original_error=primary_exc, start_time=start_time)
+            return await self._execute_fallback(
+                url, attempt=attempt, original_error=primary_exc, start_time=start_time
+            )
 
     async def _fetch_and_parse(
         self,
         url: str,
-        headers: Dict[str, str],
+        headers: dict[str, str],
         start_time: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Executes the HTTP GET request and parses semantic DOM structure."""
         async with httpx.AsyncClient(
             headers=headers,
@@ -94,7 +100,7 @@ class WebExtractor:
         attempt: int,
         original_error: Exception,
         start_time: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Structured fallback mechanism: tries alternate minimal headers and relaxed TLS."""
         fallback_headers = {
             "User-Agent": f"Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html) fallback-attempt-{attempt}",
@@ -142,7 +148,7 @@ class WebExtractor:
             "word_count": 0,
         }
 
-    def _parse_html(self, html_content: str) -> Dict[str, Any]:
+    def _parse_html(self, html_content: str) -> dict[str, Any]:
         """Parses HTML document and extracts structural elements."""
         soup = BeautifulSoup(html_content, "html.parser")
 
@@ -152,14 +158,15 @@ class WebExtractor:
 
         # Extract title and meta description
         title = soup.title.string.strip() if soup.title and soup.title.string else ""
-        meta_tag = (
-            soup.find("meta", attrs={"name": "description"})
-            or soup.find("meta", attrs={"property": "og:description"})
+        meta_tag = soup.find("meta", attrs={"name": "description"}) or soup.find(
+            "meta", attrs={"property": "og:description"}
         )
-        meta_description = meta_tag["content"].strip() if meta_tag and "content" in meta_tag.attrs else ""
+        meta_description = (
+            meta_tag["content"].strip() if meta_tag and "content" in meta_tag.attrs else ""
+        )
 
         # Extract structural headings (H1 - H3)
-        headings: List[Dict[str, str]] = []
+        headings: list[dict[str, str]] = []
         for tag_name in ["h1", "h2", "h3"]:
             for header in soup.find_all(tag_name):
                 text = header.get_text(strip=True)

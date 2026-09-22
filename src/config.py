@@ -4,7 +4,7 @@ Loads environment variables, secrets, database credentials, and execution parame
 """
 
 from functools import lru_cache
-from typing import Optional
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -20,11 +20,11 @@ class Settings(BaseSettings):
     )
 
     # API Keys & Secrets
-    OPENAI_API_KEY: Optional[str] = Field(
+    OPENAI_API_KEY: str | None = Field(
         default=None,
         description="OpenAI API Key for LLM-based competitive intelligence analysis",
     )
-    ANTHROPIC_API_KEY: Optional[str] = Field(
+    ANTHROPIC_API_KEY: str | None = Field(
         default=None,
         description="Anthropic API Key as alternative LLM provider",
     )
@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     )
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
     """Returns a cached singleton instance of application settings."""
     return Settings()

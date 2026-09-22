@@ -6,21 +6,23 @@ Includes:
 3. analyst_node: Analytical synthesis, competitive summary generation, and confidence scoring.
 """
 
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field, HttpUrl
-from src.config import settings
+from datetime import UTC, datetime
+from typing import Any
+
+from pydantic import BaseModel, Field
+
 from src.extractors.scraper import WebExtractor
 from src.graph.state import PipelineState
 from src.utils.logger import logger
-
 
 # =====================================================================
 # Pydantic Validation Schemas
 # =====================================================================
 
+
 class HeadingModel(BaseModel):
     """Normalized heading item."""
+
     level: str
     text: str
 
@@ -31,13 +33,15 @@ class SanitizedMarketData(BaseModel):
     url: str = Field(description="Normalized target URL")
     title: str = Field(default="", description="Sanitized web page title")
     meta_description: str = Field(default="", description="Cleaned meta description")
-    headings: List[HeadingModel] = Field(default_factory=list, description="Extracted structural headings")
+    headings: list[HeadingModel] = Field(
+        default_factory=list, description="Extracted structural headings"
+    )
     cleaned_text: str = Field(default="", description="Sanitized readable body text")
     word_count: int = Field(default=0, ge=0, description="Total word count in body text")
     is_fallback: bool = Field(default=False, description="Whether fallback extraction was utilized")
     http_status: int = Field(default=200, description="HTTP response status code")
     sanitized_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="Timestamp of sanitization",
     )
 
@@ -50,13 +54,23 @@ class SanitizedMarketData(BaseModel):
 class IntelligenceAnalysis(BaseModel):
     """Structured competitive intelligence report and confidence evaluation."""
 
-    executive_summary: str = Field(description="High-level synthesis of value proposition and offerings")
-    key_themes: List[str] = Field(default_factory=list, description="Extracted commercial or technical themes")
-    market_signals: List[str] = Field(default_factory=list, description="Identified competitive advantages or signals")
-    content_quality: str = Field(description="Evaluation of source content quality (HIGH, MEDIUM, LOW)")
-    confidence_score: float = Field(ge=0.0, le=1.0, description="Quantitative reliability score (0.0 to 1.0)")
+    executive_summary: str = Field(
+        description="High-level synthesis of value proposition and offerings"
+    )
+    key_themes: list[str] = Field(
+        default_factory=list, description="Extracted commercial or technical themes"
+    )
+    market_signals: list[str] = Field(
+        default_factory=list, description="Identified competitive advantages or signals"
+    )
+    content_quality: str = Field(
+        description="Evaluation of source content quality (HIGH, MEDIUM, LOW)"
+    )
+    confidence_score: float = Field(
+        ge=0.0, le=1.0, description="Quantitative reliability score (0.0 to 1.0)"
+    )
     analyzed_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="Timestamp of intelligence generation",
     )
 
@@ -65,7 +79,8 @@ class IntelligenceAnalysis(BaseModel):
 # Pure LangGraph Nodes
 # =====================================================================
 
-async def extract_node(state: PipelineState) -> Dict[str, Any]:
+
+async def extract_node(state: PipelineState) -> dict[str, Any]:
     """Node: Consumes target_url, invokes WebExtractor, and populates raw_data.
 
     Args:
@@ -84,7 +99,7 @@ async def extract_node(state: PipelineState) -> Dict[str, Any]:
     logger.info("Executing extract_node on {} (attempt {})", url, current_retry)
 
     extractor = WebExtractor()
-    errors: List[str] = []
+    errors: list[str] = []
 
     try:
         raw_result = await extractor.extract(url, attempt=current_retry)
@@ -112,7 +127,7 @@ async def extract_node(state: PipelineState) -> Dict[str, Any]:
     }
 
 
-async def sanitize_node(state: PipelineState) -> Dict[str, Any]:
+async def sanitize_node(state: PipelineState) -> dict[str, Any]:
     """Node: Normalizes raw_data into a strict Pydantic SanitizedMarketData schema.
 
     Args:
@@ -123,7 +138,7 @@ async def sanitize_node(state: PipelineState) -> Dict[str, Any]:
     """
     logger.info("Executing sanitize_node for {}", state["target_url"])
     raw = state.get("raw_data", {})
-    errors: List[str] = []
+    errors: list[str] = []
 
     try:
         headings_raw = raw.get("headings", [])
@@ -157,7 +172,7 @@ async def sanitize_node(state: PipelineState) -> Dict[str, Any]:
             "word_count": 0,
             "is_fallback": True,
             "http_status": 500,
-            "sanitized_at": datetime.now(timezone.utc).isoformat(),
+            "sanitized_at": datetime.now(UTC).isoformat(),
         }
 
     return {
@@ -166,7 +181,7 @@ async def sanitize_node(state: PipelineState) -> Dict[str, Any]:
     }
 
 
-async def analyst_node(state: PipelineState) -> Dict[str, Any]:
+async def analyst_node(state: PipelineState) -> dict[str, Any]:
     """Node: Synthesizes competitive intelligence and computes confidence score.
 
     Args:
@@ -212,7 +227,7 @@ async def analyst_node(state: PipelineState) -> Dict[str, Any]:
     quality_label = "HIGH" if confidence >= 0.8 else ("MEDIUM" if confidence >= 0.6 else "LOW")
 
     key_themes = [h.get("text") for h in headings[:5]] if headings else ["General Web Presence"]
-    
+
     executive_summary = (
         f"Competitive intelligence profile for '{title or state['target_url']}'. "
         f"Extracted {word_count} words across {len(headings)} sections. "

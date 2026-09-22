@@ -5,7 +5,8 @@ and error aggregation via Annotated reducers.
 """
 
 import operator
-from typing import Annotated, Any, Dict, List
+from typing import Annotated, Any
+
 from typing_extensions import TypedDict
 
 
@@ -23,9 +24,9 @@ class PipelineState(TypedDict):
     """
 
     target_url: str
-    raw_data: Dict[str, Any]
-    cleaned_data: Dict[str, Any]
-    analysis: Dict[str, Any]
+    raw_data: dict[str, Any]
+    cleaned_data: dict[str, Any]
+    analysis: dict[str, Any]
     confidence_score: float
     retry_count: int
-    errors: Annotated[List[str], operator.add]
+    errors: Annotated[list[str], operator.add]

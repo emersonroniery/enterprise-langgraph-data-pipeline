@@ -1,14 +1,18 @@
-name: CI Pipeline
+name: CI
 
 on:
   push:
-    branches: [ "main", "develop" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "main", "develop" ]
+    branches: [ "main" ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  lint-and-test:
-    name: Lint & Run Unit Tests
+  quality-and-test:
+    name: Lint & Test Suite
     runs-on: ubuntu-latest
 
     services:
@@ -27,7 +31,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout Source Code
         uses: actions/checkout@v4
 
       - name: Set up Python 3.11
@@ -41,20 +45,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Ruff Linter
+      - name: Run Ruff Linter & Code Quality
         run: |
           ruff check .
 
-      - name: Run Unit Tests
-        env:
-          OPENAI_API_KEY: mock-key
-          ANTHROPIC_API_KEY: mock-key
-          POSTGRES_USER: pipeline_user
-          POSTGRES_PASSWORD: pipeline_password_secure_mock
-          POSTGRES_DB: pipeline_db
-          POSTGRES_HOST: localhost
-          POSTGRES_PORT: 5432
-          LOG_LEVEL: DEBUG
-          HEADLESS_BROWSER: "true"
+      - name: Run Ruff Format Verification
         run: |
-          pytest -v tests/
+          ruff format --check .
+
+      - name: Execute Pytest Suite
+        env:
+          OPENAI_API_KEY: mock-openai-token
+          ANTHROPIC_API_KEY: mock-anthropic-token
+          POSTGRES_URL: postgresql://pipeline_user:pipeline_password_secure_mock@localhost:5432/pipeline_db
+          LOG_LEVEL: DEBUG
+        run: |
+          pytest -v --tb=short

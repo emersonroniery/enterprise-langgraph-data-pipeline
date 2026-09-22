@@ -3,30 +3,33 @@
 Provides relational schema definitions for pipeline execution audits and extracted records.
 """
 
-from datetime import datetime, timezone
-from typing import Generator
+from collections.abc import Generator
+from datetime import UTC, datetime
+
 from sqlalchemy import (
-    create_engine,
+    JSON,
+    Boolean,
+    DateTime,
+    Integer,
     String,
     Text,
-    DateTime,
-    Boolean,
-    JSON,
-    Integer,
+    create_engine,
 )
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
+    Session,
     mapped_column,
     sessionmaker,
-    Session,
 )
+
 from src.config import settings
 from src.utils.logger import logger
 
 
 class Base(DeclarativeBase):
     """Declarative base class for all enterprise database models."""
+
     pass
 
 
@@ -42,7 +45,7 @@ class PipelineRunRecord(Base):
     run_metadata: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=False,
     )
     completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -61,7 +64,7 @@ class ExtractedDocumentRecord(Base):
     parsed_payload: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=False,
     )
 

@@ -1,7 +1,9 @@
 """Unit and integration tests for data extraction mechanisms."""
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+
 from src.extractors.scraper import WebExtractor
 
 
