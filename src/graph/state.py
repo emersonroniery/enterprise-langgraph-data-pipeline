@@ -1,30 +1,31 @@
-"""Pipeline state schema definitions for LangGraph.
+"""Global state schema definitions for the LangGraph market intelligence pipeline.
 
-Maintains typed graph state, intermediate artifacts, execution metadata, and error tracing.
+Maintains typed graph state channels, execution metadata, extracted content,
+and error aggregation via Annotated reducers.
 """
 
-from typing import Annotated, Any, Dict, List, Optional
-from typing_extensions import TypedDict
 import operator
+from typing import Annotated, Any, Dict, List
+from typing_extensions import TypedDict
 
 
 class PipelineState(TypedDict):
-    """Represents the global state passed between nodes in the LangGraph data pipeline.
+    """Global state schema traversing all nodes in the intelligence pipeline.
 
     Attributes:
-        pipeline_id: Unique identifier for the pipeline run.
-        target_urls: List of URLs scheduled for extraction.
-        raw_documents: Raw extracted documents / HTML / text payloads.
-        processed_records: Structured and validated entity records ready for storage.
-        errors: Aggregated list of operational errors encountered across nodes.
-        metadata: Execution context, metrics, and runtime flags.
-        is_completed: Flag indicating terminal state reached.
+        target_url: The target market intelligence URL to inspect and scrape.
+        raw_data: Extracted raw data payload including HTML, headers, status and metadata.
+        cleaned_data: Sanitized, normalized, and validated data structure.
+        analysis: Structured competitive intelligence report and analytical insights.
+        confidence_score: Quantitative reliability metric for the extraction and analysis (0.0 to 1.0).
+        retry_count: Number of execution cycles performed when confidence is below threshold.
+        errors: Cumulative list of errors encountered across node executions, reduced via list concatenation.
     """
 
-    pipeline_id: str
-    target_urls: List[str]
-    raw_documents: Annotated[List[Dict[str, Any]], operator.add]
-    processed_records: Annotated[List[Dict[str, Any]], operator.add]
+    target_url: str
+    raw_data: Dict[str, Any]
+    cleaned_data: Dict[str, Any]
+    analysis: Dict[str, Any]
+    confidence_score: float
+    retry_count: int
     errors: Annotated[List[str], operator.add]
-    metadata: Dict[str, Any]
-    is_completed: bool

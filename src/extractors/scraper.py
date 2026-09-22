@@ -1,92 +1,186 @@
-"""Web extraction engine supporting both headless browser automation and fast async HTTP requests.
+"""Asynchronous web data extraction module with structured resilience and fallback strategies.
 
-Leverages Playwright for dynamic SPA rendering and HTTPX/BeautifulSoup for high-throughput static extraction.
+Fetches target websites, parses semantic DOM trees, and extracts structured text
+and metadata for market intelligence analysis.
 """
 
-from typing import Dict, Any, Optional
+import time
+from typing import Any, Dict, List, Optional
 import httpx
 from bs4 import BeautifulSoup
-from playwright.async_api import async_playwright, Browser, Playwright
 from src.config import settings
 from src.utils.logger import logger
 
 
-class AsyncScraper:
-    """Enterprise asynchronous data scraper with hybrid execution strategy."""
+class WebExtractor:
+    """Enterprise asynchronous web extractor leveraging HTTPX and BeautifulSoup."""
 
-    def __init__(self, timeout: float = 30.0) -> None:
-        """Initializes the scraper with timeout and browser session parameters."""
-        self.timeout = timeout
-        self._playwright: Optional[Playwright] = None
-        self._browser: Optional[Browser] = None
+    def __init__(
+        self,
+        timeout: Optional[float] = None,
+        max_redirects: int = 5,
+    ) -> None:
+        """Initializes extractor with configurable timeout and network boundaries."""
+        self.timeout = timeout or settings.REQUEST_TIMEOUT
+        self.max_redirects = max_redirects
+        self.default_headers = {
+            "User-Agent": settings.DEFAULT_USER_AGENT,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9,pt-BR;q=0.8,pt;q=0.7",
+            "DNT": "1",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
+        }
 
-    async def __aenter__(self) -> "AsyncScraper":
-        """Async context manager entry: initializes Playwright browser instance."""
-        self._playwright = await async_playwright().start()
-        self._browser = await self._playwright.chromium.launch(
-            headless=settings.HEADLESS_BROWSER
-        )
-        return self
+    async def extract(self, url: str, attempt: int = 0) -> Dict[str, Any]:
+        """Asynchronously extracts DOM text, headers, and metadata from a target URL.
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
-        """Async context manager exit: gracefully disposes browser resources."""
-        if self._browser:
-            await self._browser.close()
-        if self._playwright:
-            await self._playwright.stop()
-
-    async def fetch_static(self, url: str) -> Dict[str, Any]:
-        """Fetches static web pages using HTTPX and parses DOM via BeautifulSoup.
+        Implements an automatic structured fallback strategy when initial requests
+        encounter network timeouts, client barriers, or HTTP errors.
 
         Args:
-            url: Target web page URL.
+            url: The target endpoint to fetch and extract.
+            attempt: Current retry attempt count.
 
         Returns:
-            Extracted document dictionary with status, title, and raw HTML.
+            Dictionary containing raw extraction payload and diagnostic metrics.
         """
-        logger.info("Executing static HTTP extraction: {}", url)
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
+        logger.info("Starting web extraction for URL: {} (attempt {})", url, attempt)
+        start_time = time.perf_counter()
+
+        # Primary extraction attempt
+        try:
+            return await self._fetch_and_parse(url, headers=self.default_headers, start_time=start_time)
+        except (httpx.HTTPStatusError, httpx.RequestError, httpx.TimeoutException) as primary_exc:
+            logger.warning(
+                "Primary extraction failed for {} ({}). Initiating structured fallback...",
+                url,
+                primary_exc,
+            )
+            return await self._execute_fallback(url, attempt=attempt, original_error=primary_exc, start_time=start_time)
+
+    async def _fetch_and_parse(
+        self,
+        url: str,
+        headers: Dict[str, str],
+        start_time: float,
+    ) -> Dict[str, Any]:
+        """Executes the HTTP GET request and parses semantic DOM structure."""
+        async with httpx.AsyncClient(
+            headers=headers,
+            timeout=self.timeout,
+            follow_redirects=True,
+            max_redirects=self.max_redirects,
+            verify=True,
+        ) as client:
             response = await client.get(url)
             response.raise_for_status()
 
-            soup = BeautifulSoup(response.text, "html.parser")
-            title = soup.title.string.strip() if soup.title and soup.title.string else ""
+            elapsed_ms = round((time.perf_counter() - start_time) * 1000, 2)
+            parsed_dom = self._parse_html(response.text)
 
             return {
-                "url": url,
-                "status": response.status_code,
-                "title": title,
-                "html": response.text,
+                "url": str(response.url),
+                "status_code": response.status_code,
+                "elapsed_ms": elapsed_ms,
+                "is_fallback": False,
+                "headers": dict(response.headers),
+                **parsed_dom,
             }
 
-    async def fetch_dynamic(self, url: str, wait_selector: Optional[str] = None) -> Dict[str, Any]:
-        """Renders dynamic JavaScript-heavy pages using headless Playwright.
+    async def _execute_fallback(
+        self,
+        url: str,
+        attempt: int,
+        original_error: Exception,
+        start_time: float,
+    ) -> Dict[str, Any]:
+        """Structured fallback mechanism: tries alternate minimal headers and relaxed TLS."""
+        fallback_headers = {
+            "User-Agent": f"Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html) fallback-attempt-{attempt}",
+            "Accept": "*/*",
+        }
 
-        Args:
-            url: Target web page URL.
-            wait_selector: Optional CSS selector to wait for before extracting DOM.
-
-        Returns:
-            Extracted document dictionary with rendered HTML and page metadata.
-        """
-        logger.info("Executing dynamic browser extraction: {}", url)
-        if not self._browser:
-            raise RuntimeError("Browser not initialized. Use 'async with AsyncScraper():' context.")
-
-        page = await self._browser.new_page()
         try:
-            await page.goto(url, timeout=int(self.timeout * 1000))
-            if wait_selector:
-                await page.wait_for_selector(wait_selector, timeout=int(self.timeout * 1000))
+            async with httpx.AsyncClient(
+                headers=fallback_headers,
+                timeout=self.timeout + 5.0,
+                follow_redirects=True,
+                verify=False,
+            ) as client:
+                response = await client.get(url)
+                elapsed_ms = round((time.perf_counter() - start_time) * 1000, 2)
 
-            content = await page.content()
-            title = await page.title()
+                if response.status_code < 400:
+                    parsed_dom = self._parse_html(response.text)
+                    logger.info("Structured fallback succeeded for: {}", url)
+                    return {
+                        "url": str(response.url),
+                        "status_code": response.status_code,
+                        "elapsed_ms": elapsed_ms,
+                        "is_fallback": True,
+                        "fallback_notes": f"Recovered from primary failure: {original_error}",
+                        "headers": dict(response.headers),
+                        **parsed_dom,
+                    }
+        except Exception as fallback_exc:
+            logger.error("Fallback extraction also failed for {}: {}", url, fallback_exc)
 
-            return {
-                "url": url,
-                "status": 200,
-                "title": title,
-                "html": content,
-            }
-        finally:
-            await page.close()
+        # Graceful diagnostic degradation when both strategies encounter errors
+        elapsed_ms = round((time.perf_counter() - start_time) * 1000, 2)
+        return {
+            "url": url,
+            "status_code": getattr(getattr(original_error, "response", None), "status_code", 500),
+            "elapsed_ms": elapsed_ms,
+            "is_fallback": True,
+            "error": str(original_error),
+            "title": "",
+            "meta_description": "",
+            "headings": [],
+            "paragraphs": [],
+            "raw_text": "",
+            "word_count": 0,
+        }
+
+    def _parse_html(self, html_content: str) -> Dict[str, Any]:
+        """Parses HTML document and extracts structural elements."""
+        soup = BeautifulSoup(html_content, "html.parser")
+
+        # Strip scripts, styles, and SVG artifacts
+        for element in soup(["script", "style", "svg", "noscript", "iframe"]):
+            element.decompose()
+
+        # Extract title and meta description
+        title = soup.title.string.strip() if soup.title and soup.title.string else ""
+        meta_tag = (
+            soup.find("meta", attrs={"name": "description"})
+            or soup.find("meta", attrs={"property": "og:description"})
+        )
+        meta_description = meta_tag["content"].strip() if meta_tag and "content" in meta_tag.attrs else ""
+
+        # Extract structural headings (H1 - H3)
+        headings: List[Dict[str, str]] = []
+        for tag_name in ["h1", "h2", "h3"]:
+            for header in soup.find_all(tag_name):
+                text = header.get_text(strip=True)
+                if text:
+                    headings.append({"level": tag_name.upper(), "text": text})
+
+        # Extract readable text paragraphs
+        paragraphs = [
+            p.get_text(strip=True)
+            for p in soup.find_all(["p", "article", "section"])
+            if p.get_text(strip=True)
+        ]
+
+        full_text = " ".join(paragraphs)
+        words = full_text.split()
+
+        return {
+            "title": title,
+            "meta_description": meta_description,
+            "headings": headings[:15],
+            "paragraphs": paragraphs[:25],
+            "raw_text": full_text[:10000],
+            "word_count": len(words),
+        }

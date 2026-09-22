@@ -1,8 +1,8 @@
 """Data extraction subsystem package.
 
-Integrates headless browser scraping (Playwright) and fast asynchronous HTTP fetching (HTTPX).
+Integrates resilient asynchronous web extraction via HTTPX and BeautifulSoup.
 """
 
-from src.extractors.scraper import AsyncScraper
+from src.extractors.scraper import WebExtractor
 
-__all__ = ["AsyncScraper"]
+__all__ = ["WebExtractor"]

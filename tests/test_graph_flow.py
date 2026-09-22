@@ -1,50 +1,89 @@
-"""Functional tests for the LangGraph workflow execution pipeline."""
+"""Functional tests for the LangGraph market intelligence workflow."""
 
 import pytest
-from src.graph.workflow import create_pipeline_graph
+from unittest.mock import AsyncMock, patch
+from src.graph.workflow import create_pipeline_graph, evaluate_confidence_and_retry
 from src.graph.state import PipelineState
+from langgraph.graph import END
 
 
 @pytest.mark.asyncio
-async def test_pipeline_graph_compilation_and_execution():
-    """Verifies that the compiled LangGraph workflow executes end-to-end through all nodes."""
+async def test_pipeline_graph_successful_flow():
+    """Verifies that high-confidence extraction flows directly to END."""
     app = create_pipeline_graph()
 
-    initial_state: PipelineState = {
-        "pipeline_id": "test-pipeline-run-001",
-        "target_urls": ["https://example.com/item1", "https://example.com/item2"],
-        "raw_documents": [],
-        "processed_records": [],
+    mock_raw_data = {
+        "url": "https://company.com",
+        "status_code": 200,
+        "title": "Enterprise Cloud Analytics",
+        "meta_description": "Data pipelines and intelligence platform",
+        "headings": [
+            {"level": "H1", "text": "Platform Overview"},
+            {"level": "H2", "text": "Enterprise Features"},
+            {"level": "H3", "text": "Developer API & Pricing"},
+        ],
+        "paragraphs": ["Deep text content " * 30],
+        "raw_text": "Deep text content " * 30,
+        "word_count": 180,
+        "is_fallback": False,
+    }
+
+    with patch("src.extractors.scraper.WebExtractor.extract", new_callable=AsyncMock) as mock_extract:
+        mock_extract.return_value = mock_raw_data
+
+        initial_state: PipelineState = {
+            "target_url": "https://company.com",
+            "raw_data": {},
+            "cleaned_data": {},
+            "analysis": {},
+            "confidence_score": 0.0,
+            "retry_count": 0,
+            "errors": [],
+        }
+
+        final_state = await app.ainvoke(initial_state)
+
+        assert final_state["confidence_score"] >= 0.70
+        assert final_state["retry_count"] == 0
+        assert "Enterprise Cloud Analytics" in final_state["cleaned_data"]["title"]
+        assert "executive_summary" in final_state["analysis"]
+
+
+@pytest.mark.asyncio
+async def test_conditional_router_retry_and_termination():
+    """Verifies conditional routing decisions based on confidence and retries."""
+    # Low confidence with retry budget -> route to 'extract'
+    low_confidence_state: PipelineState = {
+        "target_url": "https://empty-page.com",
+        "raw_data": {},
+        "cleaned_data": {},
+        "analysis": {},
+        "confidence_score": 0.45,
+        "retry_count": 0,
         "errors": [],
-        "metadata": {"environment": "test"},
-        "is_completed": False,
     }
+    assert evaluate_confidence_and_retry(low_confidence_state) == "extract"
 
-    final_state = await app.ainvoke(initial_state)
-
-    assert final_state["is_completed"] is True
-    assert len(final_state["raw_documents"]) == 2
-    assert len(final_state["processed_records"]) == 2
-    assert final_state["metadata"].get("persisted_records") == 2
-    assert len(final_state["errors"]) == 0
-
-
-@pytest.mark.asyncio
-async def test_pipeline_graph_error_branching():
-    """Verifies that errors route execution directly to error_handler_node."""
-    app = create_pipeline_graph()
-
-    faulty_state: PipelineState = {
-        "pipeline_id": "test-faulty-run-002",
-        "target_urls": [],
-        "raw_documents": [],
-        "processed_records": [],
-        "errors": ["Extraction failed due to network timeout"],
-        "metadata": {"environment": "test"},
-        "is_completed": False,
+    # Low confidence with exhausted retries -> route to END
+    exhausted_state: PipelineState = {
+        "target_url": "https://empty-page.com",
+        "raw_data": {},
+        "cleaned_data": {},
+        "analysis": {},
+        "confidence_score": 0.45,
+        "retry_count": 2,
+        "errors": [],
     }
+    assert evaluate_confidence_and_retry(exhausted_state) == END
 
-    final_state = await app.ainvoke(faulty_state)
-
-    assert final_state["is_completed"] is False
-    assert final_state["metadata"].get("failed") is True
+    # High confidence -> route to END
+    high_confidence_state: PipelineState = {
+        "target_url": "https://valid-page.com",
+        "raw_data": {},
+        "cleaned_data": {},
+        "analysis": {},
+        "confidence_score": 0.85,
+        "retry_count": 0,
+        "errors": [],
+    }
+    assert evaluate_confidence_and_retry(high_confidence_state) == END
