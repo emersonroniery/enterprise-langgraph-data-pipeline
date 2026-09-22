@@ -51,7 +51,7 @@ class WebExtractor:
         # Primary extraction attempt
         try:
             return await self._fetch_and_parse(url, headers=self.default_headers, start_time=start_time)
-        except (httpx.HTTPStatusError, httpx.RequestError, httpx.TimeoutException) as primary_exc:
+        except Exception as primary_exc:
             logger.warning(
                 "Primary extraction failed for {} ({}). Initiating structured fallback...",
                 url,

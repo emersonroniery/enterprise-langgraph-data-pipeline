@@ -78,7 +78,7 @@ async def extract_node(state: PipelineState) -> Dict[str, Any]:
     current_retry = state.get("retry_count", 0)
 
     # Increment retry counter if re-entering extraction from analyst node
-    if "confidence_score" in state and state["confidence_score"] is not None:
+    if state.get("analysis") and len(state.get("analysis")) > 0:
         current_retry += 1
 
     logger.info("Executing extract_node on {} (attempt {})", url, current_retry)

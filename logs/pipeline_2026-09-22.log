@@ -1,0 +1,87 @@
+2026-09-22 20:51:40.277 | INFO     | __main__:main:95 - ==================================================================
+2026-09-22 20:51:40.277 | INFO     | __main__:main:96 - Starting Enterprise LangGraph Market Intelligence Pipeline
+2026-09-22 20:51:40.278 | INFO     | __main__:main:97 - Target URL: https://news.ycombinator.com
+2026-09-22 20:51:40.279 | INFO     | __main__:main:98 - ==================================================================
+2026-09-22 20:51:40.330 | INFO     | src.graph.nodes:extract_node:84 - Executing extract_node on https://news.ycombinator.com (attempt 1)
+2026-09-22 20:51:40.332 | INFO     | src.extractors.scraper:extract:48 - Starting web extraction for URL: https://news.ycombinator.com (attempt 1)
+2026-09-22 20:51:41.944 | INFO     | src.graph.nodes:sanitize_node:124 - Executing sanitize_node for https://news.ycombinator.com
+2026-09-22 20:51:41.947 | INFO     | src.graph.nodes:analyst_node:178 - Executing analyst_node for https://news.ycombinator.com
+2026-09-22 20:51:41.947 | INFO     | src.graph.nodes:analyst_node:240 - Analysis complete for https://news.ycombinator.com. Confidence: 0.5 | Quality: LOW
+2026-09-22 20:51:41.948 | INFO     | __main__:evaluate_confidence_and_retry:34 - Evaluating router conditions -> Confidence: 0.50 (threshold: 0.7), Retries: 1 (max: 2)
+2026-09-22 20:51:41.948 | WARNING  | __main__:evaluate_confidence_and_retry:43 - Confidence 0.50 below target threshold 0.7. Triggering re-extraction attempt 2...
+2026-09-22 20:51:41.949 | INFO     | src.graph.nodes:extract_node:84 - Executing extract_node on https://news.ycombinator.com (attempt 2)
+2026-09-22 20:51:41.951 | INFO     | src.extractors.scraper:extract:48 - Starting web extraction for URL: https://news.ycombinator.com (attempt 2)
+2026-09-22 20:51:42.634 | INFO     | src.graph.nodes:sanitize_node:124 - Executing sanitize_node for https://news.ycombinator.com
+2026-09-22 20:51:42.636 | INFO     | src.graph.nodes:analyst_node:178 - Executing analyst_node for https://news.ycombinator.com
+2026-09-22 20:51:42.638 | INFO     | src.graph.nodes:analyst_node:240 - Analysis complete for https://news.ycombinator.com. Confidence: 0.5 | Quality: LOW
+2026-09-22 20:51:42.640 | INFO     | __main__:evaluate_confidence_and_retry:34 - Evaluating router conditions -> Confidence: 0.50 (threshold: 0.7), Retries: 2 (max: 2)
+2026-09-22 20:51:42.641 | INFO     | __main__:evaluate_confidence_and_retry:51 - Confidence criteria satisfied or max retries reached. Finalizing pipeline.
+2026-09-22 20:51:42.644 | INFO     | __main__:main:115 - ==================================================================
+2026-09-22 20:51:42.646 | INFO     | __main__:main:116 - Pipeline Execution Completed Successfully
+2026-09-22 20:51:42.647 | INFO     | __main__:main:117 - Final Confidence Score : 0.50
+2026-09-22 20:51:42.648 | INFO     | __main__:main:118 - Total Retries Performed: 2
+2026-09-22 20:51:42.648 | INFO     | __main__:main:119 - Report Summary         : Competitive intelligence profile for 'Hacker News'. Extracted 0 words across 0 sections. Identified primary offerings focusing on: General Web Presence.
+2026-09-22 20:51:42.650 | INFO     | __main__:main:120 - Market Signals         : ['Standard digital footprint / introductory tier']
+2026-09-22 20:51:42.650 | INFO     | __main__:main:123 - ==================================================================
+2026-09-22 20:52:23.268 | INFO     | src.extractors.scraper:extract:48 - Starting web extraction for URL: https://example.com/company (attempt 0)
+2026-09-22 20:52:23.446 | INFO     | src.extractors.scraper:extract:48 - Starting web extraction for URL: https://unreachable-endpoint.com (attempt 0)
+2026-09-22 20:52:24.634 | INFO     | src.graph.nodes:extract_node:84 - Executing extract_node on https://company.com (attempt 1)
+2026-09-22 20:52:24.636 | INFO     | src.graph.nodes:sanitize_node:124 - Executing sanitize_node for https://company.com
+2026-09-22 20:52:24.639 | INFO     | src.graph.nodes:analyst_node:178 - Executing analyst_node for https://company.com
+2026-09-22 20:52:24.640 | INFO     | src.graph.nodes:analyst_node:240 - Analysis complete for https://company.com. Confidence: 1.0 | Quality: HIGH
+2026-09-22 20:52:24.641 | INFO     | src.graph.workflow:evaluate_confidence_and_retry:34 - Evaluating router conditions -> Confidence: 1.00 (threshold: 0.7), Retries: 1 (max: 2)
+2026-09-22 20:52:24.643 | INFO     | src.graph.workflow:evaluate_confidence_and_retry:51 - Confidence criteria satisfied or max retries reached. Finalizing pipeline.
+2026-09-22 20:52:24.686 | INFO     | src.graph.workflow:evaluate_confidence_and_retry:34 - Evaluating router conditions -> Confidence: 0.45 (threshold: 0.7), Retries: 0 (max: 2)
+2026-09-22 20:52:24.687 | WARNING  | src.graph.workflow:evaluate_confidence_and_retry:43 - Confidence 0.45 below target threshold 0.7. Triggering re-extraction attempt 1...
+2026-09-22 20:52:24.688 | INFO     | src.graph.workflow:evaluate_confidence_and_retry:34 - Evaluating router conditions -> Confidence: 0.45 (threshold: 0.7), Retries: 2 (max: 2)
+2026-09-22 20:52:24.689 | INFO     | src.graph.workflow:evaluate_confidence_and_retry:51 - Confidence criteria satisfied or max retries reached. Finalizing pipeline.
+2026-09-22 20:52:24.691 | INFO     | src.graph.workflow:evaluate_confidence_and_retry:34 - Evaluating router conditions -> Confidence: 0.85 (threshold: 0.7), Retries: 0 (max: 2)
+2026-09-22 20:52:24.692 | INFO     | src.graph.workflow:evaluate_confidence_and_retry:51 - Confidence criteria satisfied or max retries reached. Finalizing pipeline.
+2026-09-22 20:52:52.180 | INFO     | src.extractors.scraper:extract:48 - Starting web extraction for URL: https://example.com/company (attempt 0)
+2026-09-22 20:52:52.404 | INFO     | src.extractors.scraper:extract:48 - Starting web extraction for URL: https://unreachable-endpoint.com (attempt 0)
+2026-09-22 20:52:52.450 | WARNING  | src.extractors.scraper:extract:55 - Primary extraction failed for https://unreachable-endpoint.com (Connection refused). Initiating structured fallback...
+2026-09-22 20:52:52.453 | ERROR    | src.extractors.scraper:_execute_fallback:127 - Fallback extraction also failed for https://unreachable-endpoint.com: Connection refused
+2026-09-22 20:52:52.498 | INFO     | src.graph.nodes:extract_node:84 - Executing extract_node on https://company.com (attempt 0)
+2026-09-22 20:52:52.500 | INFO     | src.graph.nodes:sanitize_node:124 - Executing sanitize_node for https://company.com
+2026-09-22 20:52:52.502 | INFO     | src.graph.nodes:analyst_node:178 - Executing analyst_node for https://company.com
+2026-09-22 20:52:52.503 | INFO     | src.graph.nodes:analyst_node:240 - Analysis complete for https://company.com. Confidence: 1.0 | Quality: HIGH
+2026-09-22 20:52:52.507 | INFO     | src.graph.workflow:evaluate_confidence_and_retry:34 - Evaluating router conditions -> Confidence: 1.00 (threshold: 0.7), Retries: 0 (max: 2)
+2026-09-22 20:52:52.508 | INFO     | src.graph.workflow:evaluate_confidence_and_retry:51 - Confidence criteria satisfied or max retries reached. Finalizing pipeline.
+2026-09-22 20:52:52.519 | INFO     | src.graph.workflow:evaluate_confidence_and_retry:34 - Evaluating router conditions -> Confidence: 0.45 (threshold: 0.7), Retries: 0 (max: 2)
+2026-09-22 20:52:52.519 | WARNING  | src.graph.workflow:evaluate_confidence_and_retry:43 - Confidence 0.45 below target threshold 0.7. Triggering re-extraction attempt 1...
+2026-09-22 20:52:52.521 | INFO     | src.graph.workflow:evaluate_confidence_and_retry:34 - Evaluating router conditions -> Confidence: 0.45 (threshold: 0.7), Retries: 2 (max: 2)
+2026-09-22 20:52:52.521 | INFO     | src.graph.workflow:evaluate_confidence_and_retry:51 - Confidence criteria satisfied or max retries reached. Finalizing pipeline.
+2026-09-22 20:52:52.522 | INFO     | src.graph.workflow:evaluate_confidence_and_retry:34 - Evaluating router conditions -> Confidence: 0.85 (threshold: 0.7), Retries: 0 (max: 2)
+2026-09-22 20:52:52.524 | INFO     | src.graph.workflow:evaluate_confidence_and_retry:51 - Confidence criteria satisfied or max retries reached. Finalizing pipeline.
+2026-09-22 20:53:05.115 | INFO     | __main__:main:95 - ==================================================================
+2026-09-22 20:53:05.116 | INFO     | __main__:main:96 - Starting Enterprise LangGraph Market Intelligence Pipeline
+2026-09-22 20:53:05.118 | INFO     | __main__:main:97 - Target URL: https://news.ycombinator.com
+2026-09-22 20:53:05.119 | INFO     | __main__:main:98 - ==================================================================
+2026-09-22 20:53:05.150 | INFO     | src.graph.nodes:extract_node:84 - Executing extract_node on https://news.ycombinator.com (attempt 0)
+2026-09-22 20:53:05.153 | INFO     | src.extractors.scraper:extract:48 - Starting web extraction for URL: https://news.ycombinator.com (attempt 0)
+2026-09-22 20:53:06.145 | INFO     | src.graph.nodes:sanitize_node:124 - Executing sanitize_node for https://news.ycombinator.com
+2026-09-22 20:53:06.147 | INFO     | src.graph.nodes:analyst_node:178 - Executing analyst_node for https://news.ycombinator.com
+2026-09-22 20:53:06.147 | INFO     | src.graph.nodes:analyst_node:240 - Analysis complete for https://news.ycombinator.com. Confidence: 0.5 | Quality: LOW
+2026-09-22 20:53:06.148 | INFO     | __main__:evaluate_confidence_and_retry:34 - Evaluating router conditions -> Confidence: 0.50 (threshold: 0.7), Retries: 0 (max: 2)
+2026-09-22 20:53:06.150 | WARNING  | __main__:evaluate_confidence_and_retry:43 - Confidence 0.50 below target threshold 0.7. Triggering re-extraction attempt 1...
+2026-09-22 20:53:06.157 | INFO     | src.graph.nodes:extract_node:84 - Executing extract_node on https://news.ycombinator.com (attempt 1)
+2026-09-22 20:53:06.159 | INFO     | src.extractors.scraper:extract:48 - Starting web extraction for URL: https://news.ycombinator.com (attempt 1)
+2026-09-22 20:53:06.818 | INFO     | src.graph.nodes:sanitize_node:124 - Executing sanitize_node for https://news.ycombinator.com
+2026-09-22 20:53:06.823 | INFO     | src.graph.nodes:analyst_node:178 - Executing analyst_node for https://news.ycombinator.com
+2026-09-22 20:53:06.825 | INFO     | src.graph.nodes:analyst_node:240 - Analysis complete for https://news.ycombinator.com. Confidence: 0.5 | Quality: LOW
+2026-09-22 20:53:06.827 | INFO     | __main__:evaluate_confidence_and_retry:34 - Evaluating router conditions -> Confidence: 0.50 (threshold: 0.7), Retries: 1 (max: 2)
+2026-09-22 20:53:06.829 | WARNING  | __main__:evaluate_confidence_and_retry:43 - Confidence 0.50 below target threshold 0.7. Triggering re-extraction attempt 2...
+2026-09-22 20:53:06.832 | INFO     | src.graph.nodes:extract_node:84 - Executing extract_node on https://news.ycombinator.com (attempt 2)
+2026-09-22 20:53:06.833 | INFO     | src.extractors.scraper:extract:48 - Starting web extraction for URL: https://news.ycombinator.com (attempt 2)
+2026-09-22 20:53:07.643 | INFO     | src.graph.nodes:sanitize_node:124 - Executing sanitize_node for https://news.ycombinator.com
+2026-09-22 20:53:07.645 | INFO     | src.graph.nodes:analyst_node:178 - Executing analyst_node for https://news.ycombinator.com
+2026-09-22 20:53:07.645 | INFO     | src.graph.nodes:analyst_node:240 - Analysis complete for https://news.ycombinator.com. Confidence: 0.5 | Quality: LOW
+2026-09-22 20:53:07.646 | INFO     | __main__:evaluate_confidence_and_retry:34 - Evaluating router conditions -> Confidence: 0.50 (threshold: 0.7), Retries: 2 (max: 2)
+2026-09-22 20:53:07.646 | INFO     | __main__:evaluate_confidence_and_retry:51 - Confidence criteria satisfied or max retries reached. Finalizing pipeline.
+2026-09-22 20:53:07.648 | INFO     | __main__:main:115 - ==================================================================
+2026-09-22 20:53:07.648 | INFO     | __main__:main:116 - Pipeline Execution Completed Successfully
+2026-09-22 20:53:07.648 | INFO     | __main__:main:117 - Final Confidence Score : 0.50
+2026-09-22 20:53:07.649 | INFO     | __main__:main:118 - Total Retries Performed: 2
+2026-09-22 20:53:07.649 | INFO     | __main__:main:119 - Report Summary         : Competitive intelligence profile for 'Hacker News'. Extracted 0 words across 0 sections. Identified primary offerings focusing on: General Web Presence.
+2026-09-22 20:53:07.651 | INFO     | __main__:main:120 - Market Signals         : ['Standard digital footprint / introductory tier']
+2026-09-22 20:53:07.651 | INFO     | __main__:main:123 - ==================================================================
